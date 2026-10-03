@@ -1,113 +1,90 @@
-About Hide Top Bar
-------------------
+# Hide Top Bar Fixed
 
-This GNOME extension helps to hide GNOME's top bar when it gets into your way.
+A fork of [Hide Top Bar](https://github.com/tuxor1337/hidetopbar) for GNOME 50,
+with fixes for a panel that flashes and disappears when revealed over a
+maximized window, invisible panel buttons that remain clickable, and interference
+with Spotlight-style launchers.
 
-In the extension's preferences, different behaviors can be specified: unhiding on mouse-over or on pressing a keyboard shortcut, or when no window requires the space.
+The combined fix has been confirmed on GNOME/Mutter 50.5. Compatibility with
+other GNOME versions is not claimed.
 
-![clip](./preview.gif)
+## What changed
 
-Installation from extensions.gnome.org
---------------------------------------
+- Hold a balanced compositor inhibition while the extension is enabled, so
+  windows covering the monitor cannot bypass Shell overlay composition.
+- Let auto-hide control panel visibility instead of racing GNOME fullscreen tracking.
+- Animate visual translation rather than the panel's layout position.
+- Keep hover bounds anchored to the monitor edge, including panel height changes.
+- Reveal after a stationary 150 ms hover at the top edge, without requiring pressure.
+- Avoid interrupting an opening animation on repeated edge notifications.
+- Clean up settings signals, pointer barriers, watches, menus and pending timers.
+- Suppress edge activation while an unrelated Shell popup owns keyboard focus.
 
-Unless you are on Debian (see section below), the recommended way of installing Hide Top Bar is via the official builds on
-[extensions.gnome.org/.../hide-top-bar/](https://extensions.gnome.org/extension/545/hide-top-bar/).
+The original project and this fork have separate settings and extension IDs.
+Do not enable both extensions at the same time.
 
-If you're installing via a Chrome browser, make sure you read the
-[GNOME Shell integration for Chrome Installation Guide](https://wiki.gnome.org/Projects/GnomeShellIntegrationForChrome/Installation).
+## Install
 
+Clone your fork or download its source, then run from the repository directory:
 
-[Debian](https://packages.debian.org/unstable/gnome-shell-extension-autohidetopbar)
-------
+```sh
+glib-compile-schemas --strict schemas
+gnome-extensions pack --force --out-dir=. \
+  --extra-source=panelVisibilityManager.js \
+  --extra-source=intellihide.js \
+  --extra-source=convenience.js \
+  --extra-source=desktopIconsIntegration.js \
+  --extra-source=Settings.ui \
+  --extra-source=COPYING.txt .
+gnome-extensions install --force hidetopbar-fixed@local.shell-extension.zip
+```
 
-If you are using a Debian based distribution, the preferred installation method is to use
-the packaged version. By this, compatibility problems caused by different gnome-shell versions in
-your distribution can be avoided. You can install the package with:
+Log out and log back in so GNOME loads the extension, then enable **Hide Top Bar
+Fixed** in Extensions. Disable the original Hide Top Bar first. The fork retains
+`hidetopbar-fixed@local` as its ID for compatibility with existing installations.
 
-    sudo apt install gnome-shell-extension-autohidetopbar
+Enable **Show panel when mouse approaches edge of the screen**. Leave
+**Show overview when mouse approaches edge of the screen** disabled if you only
+want to reveal the panel. The new hover behavior targets the primary monitor.
 
-If you find problems with the _Debian packaged version_, please file bugs at
-the [Debian Bugtracking system](https://www.debian.org/Bugs/Reporting).
+## Validation
 
-Installation from source
-------------------------
+Requires Python 3, GJS and GLib tools; no Python packages are needed.
 
-If you insist on installing from source, the commands `xgettext` and `msgfmt`
-from the `gettext` package (package name may vary depending on your
-distribution) are required.
+```sh
+python3 tests/run.py
+python3 tests/run_lifecycle.py
+glib-compile-schemas --strict schemas
+```
 
-The procedure to install from source is as follows: Check out the source code, compile by
-running `make`, install and restart GNOME Shell. For example:
+Regression tests use Shell doubles for hover, geometry, animation deduplication,
+hidden input state, cleanup and balanced compositor inhibition. An isolated real
+GNOME/Mutter 50.5 session with a maximized GTK 4 window and Spotlight verified
+that edge hover keeps the panel visible and Spotlight remains open. The fix was
+also confirmed in the affected desktop session.
 
-    git clone https://gitlab.gnome.org/tuxor1337/hidetopbar.git
-    cd hidetopbar
-    make
-    gnome-extensions install ./hidetopbar.zip
+Keeping composition enabled disables the unredirect optimization while the
+extension is active; this may increase rendering overhead for games and video.
+Normal compositor behavior is restored when the extension is disabled.
 
-You then need to log off and on again for the install procedure to take effect. Alternatively, you may want
-to try one of the following:
+## Troubleshooting and rollback
 
-    # If you are running a X11 session run the following command
-    gnome-shell --replace &
-    # If you are running a wayland session run the following command
-    dbus-run-session -- gnome-shell --nested --wayland
+Disable this fork and re-enable the original extension to roll back. Original
+settings are preserved. Do not run both simultaneously.
 
-You can enable the extension through the interface on [extensions.gnome.org](https://extensions.gnome.org), the [gnome-extensions-app](https://apps.gnome.org/de/Extensions/), or the following command line:
+For transition diagnostics:
 
-    gnome-extensions enable hidetopbar@mathieu.bidon.ca
+```sh
+gsettings --schemadir schemas set org.gnome.shell.extensions.hidetopbarfixed debug-transitions true
+journalctl -b _COMM=gnome-shell --no-pager -g 'Hide Top Bar Fix'
+gsettings --schemadir schemas set org.gnome.shell.extensions.hidetopbarfixed debug-transitions false
+```
 
-Updating the language strings
------------------------------
+## Upstream and license
 
-Whenever you notice that there are localizable strings in Hide Top Bar that are not
-covered by the strings in `./locale/`, you can regenerate the `*.pot`-file using the
-following command:
+Based on upstream commit `aa7d51e`; original source:
+[GNOME GitLab](https://gitlab.gnome.org/tuxor1337/hidetopbar).
+The GitHub parent is its read-only mirror.
 
-    make ./locale/hidetopbar.pot
-
-To then incorporate the changes to the actual translation files for each language,
-run one of the following commands:
-
-    # for updating the files for all languages:
-    make all-po
-    
-    # for updating one specific po file, where 'XX' is the language code:
-    make ./locale/XX/LC_MESSAGES/hidetopbar@mathieu.bidon.ca.po
-
-As mentioned in the previous section, running `make` requires the `gettext` package
-to be installed (the package names may vary depending on your distribution).
-
-Troubleshooting
----------------
-
-### Can I assign a shortcut to temporally disable the autohiding altogether?
-
-Follow the [instructions to assign a system-wide shortcut that disables/enables the extension](https://gitlab.gnome.org/tuxor1337/hidetopbar/issues/43#issuecomment-796583424).
-
-### Notification pop-ups cause the top bar to hide.
-
-Use another extension (like [Just Perfection](https://extensions.gnome.org/extension/3843/just-perfection/) or [Notification Banner Reloaded](https://extensions.gnome.org/extension/4651/notification-banner-reloaded/)) to configure the position where notification pop-ups show up, e.g. at the bottom of the screen or just a few pixels down where they won't overlap with the top bar.
-
-### The panel overlaps with the dash/dock.
-
-This is an issue of the extension [Dash to Dock](https://github.com/micheleg/dash-to-dock), see also [this comment](https://github.com/tuxor1337/hidetopbar/issues/149#issuecomment-964419677).
-
-License
--------
-
-Copyright (c) 2013-2026 Thomas Vogt.
-
-Copyright (c) 2012-2013 Mathieu Lutfy.
-
-Copyright (c) 2012 Philip Witte.
-
-Hide Top Bar is free software: you can redistribute it and/or modify it under the terms of the
-GNU General Public License as published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
-
-Hide Top Bar is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
-even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with Hide Top Bar (see COPYING.txt).
-If not, see gnu.org/licenses/.
+GPL-3.0-or-later. Original copyright notices and translations are preserved.
+See [COPYING.txt](COPYING.txt) and [FORK.md](FORK.md).

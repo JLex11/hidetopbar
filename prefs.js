@@ -103,7 +103,7 @@ export default class HideTopBarPreferences extends ExtensionPreferences {
 
         let model = builder.get_object("store_shortcut_keybind");
         let model_row = model.get_iter_first()[1];
-        let binding = settings.get_strv('shortcut-keybind')[0],
+        let binding = settings.get_strv('hidetopbar-fixed-shortcut')[0],
         binding_key,
         binding_mods;
         if (binding) {
@@ -125,7 +125,7 @@ export default class HideTopBarPreferences extends ExtensionPreferences {
             }
 
             model.set(iterator, [0, 1], [binding_mods, binding_key]);
-            settings.set_strv('shortcut-keybind', [value]);
+            settings.set_strv('hidetopbar-fixed-shortcut', [value]);
         });
 
         cellrend.connect('accel-cleared',
@@ -137,11 +137,11 @@ export default class HideTopBarPreferences extends ExtensionPreferences {
             }
 
                              model.set(iterator, [0, 1], [0, 0]);
-            settings.set_strv('shortcut-keybind', []);
+            settings.set_strv('hidetopbar-fixed-shortcut', []);
         });
 
-        settings.connect('changed::shortcut-keybind', function (k, b) {
-            let binding = settings.get_strv('shortcut-keybind')[0];
+        settings.connect('changed::hidetopbar-fixed-shortcut', function (k, b) {
+            let binding = settings.get_strv('hidetopbar-fixed-shortcut')[0];
             let binding_key = binding_mods = 0;
             if (binding) {
                 [binding_key, binding_mods] = Gtk.accelerator_parse(binding);

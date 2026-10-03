@@ -39,16 +39,32 @@ export default class HideTopBarExtension extends Extension {
         DEBUG("enable()");
         mSettings = this.getSettings();
         monitorIndex = Main.layoutManager.primaryIndex;
-        mPVManager = new PanelVisibilityManager.PanelVisibilityManager(
-            mSettings, monitorIndex,
-        );
+        // Without the reserved panel area, maximized apps can bypass composition.
+        // Hold one balanced inhibit while auto-hide and Shell overlays are in use.
+        global.compositor.disable_unredirect();
+        this._compositionHeld = true;
+        try {
+            mPVManager = new PanelVisibilityManager.PanelVisibilityManager(
+                mSettings, monitorIndex,
+            );
+        } catch (error) {
+            global.compositor.enable_unredirect();
+            this._compositionHeld = false;
+            throw error;
+        }
     }
 
     disable() {
         DEBUG("disable()");
-        mPVManager.destroy();
-
-        mPVManager = null;
-        mSettings = null;
+        try {
+            mPVManager?.destroy();
+        } finally {
+            mPVManager = null;
+            mSettings = null;
+            if (this._compositionHeld) {
+                global.compositor.enable_unredirect();
+                this._compositionHeld = false;
+            }
+        }
     }
 }
