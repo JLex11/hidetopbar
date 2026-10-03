@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
-  <schema id="org.gnome.shell.extensions.hidetopbar" path="/org/gnome/shell/extensions/hidetopbar/">
+  <schema id="org.gnome.shell.extensions.hidetopbarfixed" path="/org/gnome/shell/extensions/hidetopbarfixed/">
     <key name="hot-corner" type="b">
       <default>false</default>
       <summary>Keep hot corner sensitive or not</summary>
@@ -71,7 +71,7 @@
         Amount of time before pressure barrier is triggered.
       </description>
     </key>
-    <key name="shortcut-keybind" type="as">
+    <key name="hidetopbar-fixed-shortcut" type="as">
       <default>[]</default>
       <summary>"show bar" shortcut</summary>
       <description>
@@ -114,6 +114,10 @@
       <description>
         When enabled, the panel will be visible in overview.
       </description>
+    </key>
+    <key name="debug-transitions" type="b">
+      <default>false</default>
+      <summary>Log panel visibility requests for troubleshooting</summary>
     </key>
   </schema>
 </schemalist>
